@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Make your own team for Aetherial Gridiron, the American football mod for FFXIV: colours, stripes, logo, wordmark, names and numbers on every piece, in 3D, then a Penumbra add-on.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Aetherial Gridiron Team Builder">
+<meta property="og:description" content="Make your own team for Aetherial Gridiron, the American football mod for FFXIV: colours, stripes, logo, wordmark, names and numbers on every piece, in 3D, then a Penumbra add-on.">
+<meta name="generator" content="Aetherial Gridiron 0.3.2 team builder">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>Aetherial Gridiron Team Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Graduate&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Teko:wght@600&family=Bebas+Neue&family=Bungee&family=Oswald:wght@700&display=block">
+<style>
+/* Layout: the equipment room. A sticky night-field stage with the whole kit in 3D on the left,
+   the team's kit sheet on the right (one card per piece); stage on top on phones. */
+:root {
+  --bg: #eceee8;            /* chalk */
+  --card: #fafbf7;
+  --ink: #141815;
+  --muted: #59625b;
+  --line: #d3d8cf;
+  --field: #0e1a13;         /* the stage: a night field */
+  --field-2: #1b3324;
+  --chalk-line: rgba(235, 242, 230, 0.10);
+  --team: #2f55a4;          /* the team's primary (set from the form) */
+  --team-ink: #ffffff;
+  --focus: #e8b830;
+  --ok: #1f7a4d;
+  --warn: #a83f2c;
+  --font-display: "Graduate", "Rockwell", "Courier New", serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-label: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101311; --card: #181c19; --ink: #e6eae4; --muted: #9ea79f; --line: #2b322d;
+    --field: #08110c; --field-2: #15281c; --chalk-line: rgba(235, 242, 230, 0.08);
+    --focus: #f0c64a; --ok: #63c595; --warn: #ef8c72; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101311; --card: #181c19; --ink: #e6eae4; --muted: #9ea79f; --line: #2b322d;
+  --field: #08110c; --field-2: #15281c; --chalk-line: rgba(235, 242, 230, 0.08);
+  --focus: #f0c64a; --ok: #63c595; --warn: #ef8c72; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 22px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: end; justify-content: space-between; margin-bottom: 18px; }
+.top h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(28px, 4.6vw, 42px); line-height: 1.05; margin: 0; letter-spacing: 0.02em; text-wrap: balance; }
+.top p { margin: 0; color: var(--muted); max-width: 58ch; }
+.eyebrow { font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* the stage */
+.stage-col { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: grid; gap: 10px; min-width: 0; }
+@media (max-width: 900px) { .stage-col { position: static; } }
+.stage { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 4 / 5; max-height: calc(100vh - 140px); width: 100%;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 46px, var(--chalk-line) 46px 48px),
+    radial-gradient(120% 70% at 50% 18%, #2a4a36 0%, var(--field-2) 38%, var(--field) 78%); }
+@media (max-width: 900px) { .stage { aspect-ratio: 1 / 1; max-height: 70vh; } }
+@media (max-width: 560px) {
+  .stage { overflow: visible; margin-bottom: 132px; }
+  .stage .bar { top: calc(100% + 8px); bottom: auto; left: 0; right: 0; justify-content: flex-start; }
+  .seg { background: var(--field); }
+}
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.stage .status { position: absolute; left: 0; right: 0; top: 46%; text-align: center; color: #dfe8dc; font-family: var(--font-label);
+  letter-spacing: 0.08em; text-transform: uppercase; font-size: 14px; pointer-events: none; }
+.stage .badge { position: absolute; right: 12px; top: 12px; background: rgba(8, 17, 12, 0.72); color: #dfe8dc; border-radius: 999px;
+  padding: 4px 10px; font-family: var(--font-label); font-size: 13px; letter-spacing: 0.06em; }
+.stage .bar { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: space-between; align-items: end; }
+.seg { display: inline-flex; background: rgba(8, 17, 12, 0.72); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { font: inherit; font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #cfdacb; background: transparent; border: 0; border-radius: 999px; padding: 6px 11px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: #eef3ea; color: #0e1a13; }
+.seg button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.plate { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 4px 2px; }
+.plate .tname { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; min-width: 0; overflow-wrap: anywhere; }
+.plate .dots { display: flex; gap: 6px; }
+.plate .dots span { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.18); }
+
+/* the kit sheet */
+.sheet { display: grid; gap: 14px; min-width: 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 16px 18px; display: grid; gap: 14px; min-width: 0; }
+.card > h2 { margin: 0; display: flex; align-items: baseline; gap: 10px; font-family: var(--font-label); font-weight: 700; font-size: 19px;
+  letter-spacing: 0.1em; text-transform: uppercase; }
+.card > h2 small { font-family: var(--font-body); font-weight: 400; font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.sub { font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+  border-top: 1px solid var(--line); padding-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rows { display: grid; gap: 10px; }
+.row { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 10px; align-items: center; }
+@media (max-width: 440px) { .row { grid-template-columns: minmax(0, 1fr); gap: 6px; } }
+.row > .lab { font-family: var(--font-label); font-weight: 600; font-size: 15px; letter-spacing: 0.04em; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.22); cursor: pointer; padding: 0; position: relative;
+  background: var(--c, #ccc); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18); }
+.chip[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ink); }
+.chip:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.chip.camo { background: radial-gradient(circle at 30% 30%, var(--c1) 0 22%, transparent 23%), radial-gradient(circle at 70% 60%, var(--c2) 0 26%, transparent 27%),
+  radial-gradient(circle at 40% 80%, var(--c3) 0 18%, transparent 19%), var(--c0); }
+.chip.custom { overflow: hidden; }
+.chip.custom input { position: absolute; inset: -6px; width: 44px; height: 44px; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+.chip.custom::after { content: "+"; position: absolute; inset: 0; display: grid; place-items: center; font-weight: 600; font-size: 16px; color: var(--plus, #222); }
+.chip.custom.set::after { content: ""; }
+.chip .tip { position: absolute; left: 50%; top: 100%; transform: translate(-50%, 6px); font-size: 11px; font-family: var(--font-label); white-space: nowrap;
+  color: var(--muted); pointer-events: none; opacity: 0; }
+.chip:hover .tip, .chip:focus-visible .tip { opacity: 1; }
+.palette { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 440px) { .palette { grid-template-columns: minmax(0, 1fr); } }
+.swatch { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 8px; min-width: 0; }
+.swatch input[type=color] { width: 44px; height: 44px; border: 0; padding: 0; border-radius: 10px; background: none; cursor: pointer; }
+.swatch .nm { font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.swatch input[type=text] { width: 100%; min-width: 0; font: inherit; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 14px; padding: 4px 6px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); text-transform: uppercase; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.preset { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-family: var(--font-label); font-weight: 600; font-size: 14px; letter-spacing: 0.04em;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 12px 4px 6px; cursor: pointer; }
+.preset i { display: inline-flex; }
+.preset i b { width: 14px; height: 14px; border-radius: 50%; margin-right: -4px; border: 1px solid rgba(0, 0, 0, 0.2); }
+.preset:focus-visible, .opt:focus-visible, .btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt { font: inherit; font-family: var(--font-label); font-weight: 600; font-size: 15px; letter-spacing: 0.03em; border: 1px solid var(--line); background: var(--bg);
+  color: var(--ink); border-radius: 10px; padding: 7px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.opt[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--card); }
+.opt svg { display: block; }
+.player { display: grid; grid-template-columns: minmax(0, 1fr) 82px auto; gap: 8px; align-items: center; }
+.player .text { font-size: 17px; padding: 6px 8px; }
+.opt.rm { padding: 6px 10px; }
+.opt .face { font-size: 20px; line-height: 1; letter-spacing: 0.02em; color: var(--ink); }
+.opt img { width: 22px; height: 22px; object-fit: contain; display: block; border-radius: 4px; background: repeating-conic-gradient(var(--line) 0 25%, transparent 0 50%) 0 0 / 8px 8px; }
+.text { width: 100%; min-width: 0; font: inherit; font-family: var(--font-display); font-size: 20px; letter-spacing: 0.06em; padding: 8px 10px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); text-transform: uppercase; }
+.text:focus-visible, input[type=checkbox]:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.duo { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 10px; align-items: start; }
+.toggle { display: inline-flex; gap: 8px; align-items: center; font-family: var(--font-label); font-weight: 600; font-size: 14px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink); cursor: pointer; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--ink); }
+.hint { font-size: 13.5px; color: var(--muted); margin: 0; }
+.off { opacity: 0.45; pointer-events: none; }
+.make { border-color: var(--ink); }
+.dirt { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.est { font-family: var(--font-label); font-size: 15px; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+.btn { font: inherit; font-family: var(--font-label); font-weight: 700; font-size: 18px; letter-spacing: 0.1em; text-transform: uppercase; border: 0;
+  border-radius: 12px; padding: 13px 18px; cursor: pointer; background: var(--team); color: var(--team-ink); width: 100%; }
+.btn[disabled] { opacity: 0.55; cursor: default; }
+.btn.save { background: var(--ink); color: var(--card); }
+.progress { display: grid; gap: 8px; }
+.progress .track { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.progress .fill { height: 100%; width: 0; background: var(--team); transition: width 0.3s; }
+.pieces { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px 14px; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pieces .done { color: var(--ok); }
+.msg { font-size: 14px; }
+.msg.err { color: var(--warn); }
+.msg.ok { color: var(--ok); }
+ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; color: var(--muted); font-size: 14px; }
+.foot { color: var(--muted); font-size: 13px; margin-top: 4px; }
+@media (prefers-reduced-motion: reduce) { .progress .fill { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Aetherial Gridiron · Blitz Football</div>
+      <h1>Team Builder</h1>
+    </div>
+    <p>Your own team on every piece of the set: colours, helmet stripes, wordmark, name and number. Then make a Penumbra add-on to wear over Aetherial Gridiron.</p>
+  </header>
+
+  <div class="layout">
+    <section class="stage-col" aria-label="Preview">
+      <div class="stage" id="stage">
+        <canvas id="view" aria-label="3D preview of the kit"></canvas>
+        <div class="status" id="status">Loading the kit…</div>
+        <div class="badge" id="badge" hidden></div>
+        <div class="bar">
+          <div class="seg" role="group" aria-label="Kit">
+            <button type="button" data-kit="home" aria-pressed="true">Home</button>
+            <button type="button" data-kit="away" aria-pressed="false">Away</button>
+          </div>
+          <div class="seg" role="group" aria-label="Dirt">
+            <button type="button" data-pdirt="clean" aria-pressed="true">Clean</button>
+            <button type="button" data-pdirt="worn" aria-pressed="false">Worn</button>
+            <button type="button" data-pdirt="grass" aria-pressed="false">Grass</button>
+            <button type="button" data-pdirt="muddy" aria-pressed="false">Mud</button>
+          </div>
+          <div class="seg" role="group" aria-label="View">
+            <button type="button" data-view="front" aria-pressed="true">Front</button>
+            <button type="button" data-view="back" aria-pressed="false">Back</button>
+            <button type="button" data-view="helmet" aria-pressed="false">Helmet</button>
+            <button type="button" data-view="cleats" aria-pressed="false">Cleats</button>
+          </div>
+        </div>
+      </div>
+      <div class="plate"><span class="tname" id="plateName">Moogles</span><span class="dots" id="plateDots"></span></div>
+    </section>
+
+    <form class="sheet" id="sheet" autocomplete="off">
+      <section class="card" aria-labelledby="h-team">
+        <h2 id="h-team">Team</h2>
+        <label class="rows"><span class="eyebrow">Team name</span>
+          <input class="text" id="teamName" maxlength="24" value="Moogles"></label>
+        <div class="row"><span class="lab">Logo</span><div class="opts" id="logoOpts"></div></div>
+        <p class="hint" id="logoHint">Your own logo goes on both helmet sides, the jersey crest, the backs and palms of the gloves and the pants hip, in its own colours. A PNG with a transparent background works best.</p>
+        <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+        <div class="palette" id="palette"></div>
+        <div class="rows"><span class="eyebrow">Starter palettes</span><div class="presets" id="presets"></div></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-helmet">
+        <h2 id="h-helmet">Helmet</h2>
+        <div class="rows"><span class="eyebrow">Stripes</span><div class="opts" id="stripeOpts"></div></div>
+        <div class="rows" id="helmetRows"></div>
+        <div class="row"><span class="lab">Shell finish</span><div class="opts" id="finishOpts"></div></div>
+        <div class="row"><span class="lab">Facemask finish</span><div class="opts" id="maskFinishOpts"></div></div>
+        <p class="hint">Finishes set how much the helmet shines in game. The preview shows them only roughly.</p>
+      </section>
+
+      <section class="card" aria-labelledby="h-jersey">
+        <h2 id="h-jersey">Jersey <small>shoulder pads and base layer</small></h2>
+        <label class="rows"><span class="eyebrow">Chest wordmark <span class="hint">(blank for none)</span></span>
+          <input class="text" id="wordmark" maxlength="14" value="MOOGLES"></label>
+        <div class="duo">
+          <label class="rows"><span class="eyebrow">Name on the back</span><input class="text" id="pname" maxlength="16" value="KUPO" placeholder="YOUR NAME"></label>
+          <label class="rows"><span class="eyebrow">Number</span><input class="text" id="pnum" maxlength="2" inputmode="numeric" value="13"></label>
+        </div>
+        <div class="rows"><span class="eyebrow">Lettering</span><div class="opts" id="fontOpts"></div></div>
+        <label class="toggle"><input type="checkbox" id="crest" checked> Crest at the V-neck</label>
+        <div class="sub"><span>Roster</span><button type="button" class="opt" id="addPlayer">Add a player</button></div>
+        <p class="hint" id="rosterHint">One jersey per player in the same add-on, each its own option. The preview shows the first.</p>
+        <div class="rows" id="roster"></div>
+        <div class="sub">Home</div>
+        <div class="rows" id="jerseyHome"></div>
+        <div class="sub"><span>Away</span><label class="toggle"><input type="checkbox" id="jerseyAwayOn" checked> Include</label></div>
+        <div class="rows" id="jerseyAway"></div>
+        <div class="sub">Base layer</div>
+        <div class="rows" id="jerseyBase"></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-gloves">
+        <h2 id="h-gloves">Gloves</h2>
+        <div class="rows" id="gloveRows"></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-pants">
+        <h2 id="h-pants">Pants <small>and leggings</small></h2>
+        <div class="sub">Home</div>
+        <div class="rows" id="pantsHome"></div>
+        <div class="sub"><span>Away</span><label class="toggle"><input type="checkbox" id="pantsAwayOn" checked> Include</label></div>
+        <div class="rows" id="pantsAway"></div>
+        <div class="sub">Leggings</div>
+        <div class="rows" id="pantsLeg"></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-feet">
+        <h2 id="h-feet">Socks and cleats</h2>
+        <div class="rows" id="feetRows"></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-camo" id="camoCard">
+        <h2 id="h-camo">Camo <small>for any colour set to camo</small></h2>
+        <div class="palette" id="camoPal"></div>
+      </section>
+
+      <section class="card make" aria-labelledby="h-make">
+        <h2 id="h-make">Make the add-on</h2>
+        <div class="rows"><span class="eyebrow">Pieces</span>
+          <div class="dirt" id="pieceOpts"></div></div>
+        <div class="rows"><span class="eyebrow">Dirt versions</span>
+          <div class="dirt" id="dirtOpts"></div></div>
+        <label class="toggle"><input type="checkbox" id="dyes" checked> In-game dyes</label>
+        <p class="hint">Dye 1 recolours the primary, dye 2 the secondary. Every version is its own option in the add-on, so each one adds to the file.</p>
+        <div class="est" id="est"></div>
+        <button type="button" class="btn" id="makeBtn" disabled>Make the add-on</button>
+        <div class="progress" id="progress" hidden>
+          <div class="track"><div class="fill" id="fill"></div></div>
+          <div class="pieces" id="pieces"></div>
+        </div>
+        <div class="msg" id="msg" role="status"></div>
+        <button type="button" class="btn save" id="saveBtn" hidden>Save</button>
+        <div class="rows">
+          <span class="eyebrow">Wear it</span>
+          <ol class="steps">
+            <li>Penumbra: <b>Import Mod</b> and pick the .zip. If it isn't listed, rename it to .pmp.</li>
+            <li>Turn it on with a <b>higher priority than Aetherial Gridiron</b>, which must stay on.</li>
+            <li>Each piece has a group in the add-on: pick the kit and dirt there.</li>
+          </ol>
+          <p class="foot" id="needs">Needs Aetherial Gridiron.</p>
+        </div>
+      </section>
+    </form>
+  </div>
+</div>
+
+<script src="three.min.js"></script>
+<script src="OrbitControls.js"></script>
+<script src="fflate.js"></script>
+<script src="engine.js"></script>
+<script src="team.js"></script>
+<script>
+"use strict";
+const TE = window.TeamEngine;
+const $ = (id) => document.getElementById(id);
+const NAMED = { white: "#F6F6F6", black: "#141416", grey: "#8A8C92" };
+const CHIP_REFS = [["primary", "Primary"], ["secondary", "Secondary"], ["accent", "Accent"], ["white", "White"], ["black", "Black"], ["grey", "Grey"], ["camo", "Camo"]];
+
+// ------------------------------------------------------------- the team
+const MOOGLES = {
+  name: "Moogles", colors: { primary: "#2F55A4", secondary: "#E8B830", accent: "#D93A48" },
+  camo: ["#66686F", "#33353A", "#9A9CA3", "#CFD0D4"], logo: "moogles",
+  helmet: { shell: "primary", style: "classic", stripe: "secondary", pinstripe: "white", facemask: "secondary", chinstrap: "#272729", mouthguard: "primary" },
+  jersey: { wordmark: "MOOGLES", name: "KUPO", number: "13", crest: true,
+    home: { body: "primary", trim: "secondary", numbers: "white", panels: "" },
+    away: { body: "#EDEDEB", trim: "secondary", numbers: "primary", panels: "" }, awayOn: true, baseLayer: "#F3F3F5" },
+  gloves: { main: "primary", palm: "secondary", trim: "white" },
+  pants: { home: { main: "secondary", stripe: "primary", piping: "white" }, away: { main: "white", stripe: "primary", piping: "white" }, awayOn: true, leggings: "#F6F6F6" },
+  feet: { socks: "white", band: "secondary", cleats: "primary", accent: "secondary", detail: "white", studs: "#303035" },
+  dirt: ["clean", "worn", "grass", "muddy"], dyes: true, pieces: ["head", "body", "hands", "legs", "feet"],
+};
+const PIECES = MOOGLES.pieces;
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const PRESETS = [
+  ["Moogles", MOOGLES],
+  ["Pink Camo", Object.assign(clone(MOOGLES), { name: "Pink Camo", logo: "none", colors: { primary: "#D9437F", secondary: "#5E6066", accent: "#F2F2F4" },
+    helmet: { shell: "primary", style: "classic", stripe: "camo", pinstripe: "white", facemask: "#55575D", chinstrap: "#272729", mouthguard: "primary" },
+    jersey: Object.assign(clone(MOOGLES.jersey), { wordmark: "", name: "BLITZ", number: "7", home: { body: "primary", trim: "camo", numbers: "white", panels: "" },
+      away: { body: "#EDEDEB", trim: "camo", numbers: "primary", panels: "" } }),
+    gloves: { main: "primary", palm: "camo", trim: "white" },
+    pants: { home: { main: "camo", stripe: "primary", piping: "white" }, away: { main: "white", stripe: "primary", piping: "white" }, awayOn: true, leggings: "#F6F6F6" },
+    feet: { socks: "white", band: "camo", cleats: "primary", accent: "camo", detail: "white", studs: "#303035" } })],
+  ["Sharks", Object.assign(clone(MOOGLES), { name: "Sharks", logo: "none", logoUrl: "logos/sharks.png",
+    colors: { primary: "#1C8A8E", secondary: "#EEF1F2", accent: "#2B2E34" },
+    camo: ["#6E7177", "#34373C", "#A4A7AC", "#D8DADD"],
+    helmet: { shell: "primary", style: "classic", stripe: "secondary", pinstripe: "accent", facemask: "#8C8F95", chinstrap: "#272729", mouthguard: "primary" },
+    jersey: Object.assign(clone(MOOGLES.jersey), { wordmark: "SHARKS", name: "CHOMP", number: "13",
+      home: { body: "primary", trim: "secondary", numbers: "white", panels: "" },
+      away: { body: "#EDEDEB", trim: "primary", numbers: "primary", panels: "" } }),
+    gloves: { main: "primary", palm: "secondary", trim: "white" },
+    pants: { home: { main: "camo", stripe: "primary", piping: "white" }, away: { main: "white", stripe: "primary", piping: "accent" }, awayOn: true, leggings: "#F6F6F6" },
+    feet: { socks: "white", band: "primary", cleats: "primary", accent: "white", detail: "white", studs: "#303035" } })],
+  ["Crimson and black", { colors: { primary: "#A3172B", secondary: "#141416", accent: "#D9D9DC" } }],
+  ["Forest and gold", { colors: { primary: "#1E5134", secondary: "#E0B53A", accent: "#F6F6F6" } }],
+  ["Royal and silver", { colors: { primary: "#21409A", secondary: "#B3B3B6", accent: "#141416" } }],
+  ["Orange and navy", { colors: { primary: "#E2661D", secondary: "#14254A", accent: "#F6F6F6" } }],
+  ["Purple and gold", { colors: { primary: "#4B2A84", secondary: "#E8B830", accent: "#F6F6F6" } }],
+  ["Teal and black", { colors: { primary: "#0A7E86", secondary: "#141416", accent: "#E9E4D8" } }],
+];
+let team = clone(MOOGLES);
+try { const s = localStorage.getItem("gridiron-team"); if (s) team = Object.assign(clone(MOOGLES), JSON.parse(s)); } catch (e) { /* no storage */ }
+if (!["moogles", "none", "custom"].includes(team.logo)) team.logo = "none";
+const save = () => { try { localStorage.setItem("gridiron-team", JSON.stringify(team, (k, v) => (k === "customLogo" ? undefined : v))); } catch (e) { /* no storage */ } };
+const get = (path) => path.split(".").reduce((o, k) => (o ? o[k] : undefined), team);
+const set = (path, v) => { const ks = path.split("."), last = ks.pop(); ks.reduce((o, k) => (o[k] = o[k] || {}), team)[last] = v; };
+const hexOf = (ref) => (ref === "camo" ? team.camo[0] : (team.colors[ref] || NAMED[ref] || ref || "#888888"));
+
+// ----------------------------------------------------------- colour fields
+const fields = [];
+function colourField(host, path, label, extra) {
+  const row = document.createElement("div");
+  row.className = "row";
+  row.innerHTML = `<span class="lab">${label}</span><div class="chips" role="group" aria-label="${label}"></div>`;
+  const box = row.querySelector(".chips");
+  const refs = (extra ? [extra] : []).concat(CHIP_REFS);
+  const btns = refs.map(([ref, name]) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip" + (ref === "camo" ? " camo" : ""); b.dataset.ref = ref;
+    b.setAttribute("aria-label", name); b.innerHTML = `<span class="tip">${name}</span>`;
+    b.addEventListener("click", () => { set(path, ref); changed(); });
+    box.appendChild(b);
+    return b;
+  });
+  const cw = document.createElement("label");
+  cw.className = "chip custom"; cw.title = "Custom colour";
+  cw.innerHTML = `<input type="color" aria-label="${label}: custom colour"><span class="tip">Custom</span>`;
+  const ci = cw.querySelector("input");
+  ci.addEventListener("input", () => { set(path, ci.value.toUpperCase()); changed(); });
+  box.appendChild(cw);
+  host.appendChild(row);
+  fields.push({ path, btns, cw, ci, extra });
+}
+function paintFields() {
+  for (const f of fields) {
+    const v = get(f.path) || "";
+    let any = false;
+    for (const b of f.btns) {
+      const ref = b.dataset.ref;
+      if (ref === "camo") ["c0", "c1", "c2", "c3"].forEach((k, i) => b.style.setProperty("--" + k, team.camo[i]));
+      else b.style.setProperty("--c", ref === "" ? "transparent" : hexOf(ref));
+      if (ref === "") b.style.backgroundImage = "linear-gradient(135deg, transparent 45%, var(--muted) 45% 55%, transparent 55%)";
+      const on = ref === v;
+      any = any || on;
+      b.setAttribute("aria-pressed", on);
+    }
+    const custom = !any && /^#[0-9A-F]{6}$/i.test(v);
+    f.cw.classList.toggle("set", custom);
+    f.cw.style.setProperty("--c", custom ? v : "var(--bg)");
+    f.cw.setAttribute("aria-pressed", custom);
+    if (custom) f.ci.value = v.toLowerCase();
+  }
+}
+
+// -------------------------------------------------------------- the form
+function buildForm() {
+  // palette
+  const pal = $("palette");
+  for (const [k, nm] of [["primary", "Primary"], ["secondary", "Secondary"], ["accent", "Accent"]]) {
+    const d = document.createElement("div");
+    d.className = "swatch";
+    d.innerHTML = `<input type="color" id="pal-${k}" aria-label="${nm} colour"><div class="rows" style="gap:2px"><span class="nm">${nm}</span><input type="text" id="palhex-${k}" maxlength="7" aria-label="${nm} hex"></div>`;
+    pal.appendChild(d);
+    d.querySelector("input[type=color]").addEventListener("input", (e) => { team.colors[k] = e.target.value.toUpperCase(); changed(); });
+    d.querySelector("input[type=text]").addEventListener("change", (e) => {
+      const v = e.target.value.trim().toUpperCase().replace(/^([0-9A-F]{6})$/, "#$1");
+      if (/^#[0-9A-F]{6}$/.test(v)) { team.colors[k] = v; changed(); } else e.target.value = team.colors[k];
+    });
+  }
+  const cp = $("camoPal");
+  ["Base", "Dark", "Light", "Flecks"].forEach((nm, i) => {
+    const d = document.createElement("div");
+    d.className = "swatch";
+    d.innerHTML = `<input type="color" id="camo-${i}" aria-label="Camo ${nm.toLowerCase()}"><div class="rows" style="gap:2px"><span class="nm">${nm}</span><span class="hint" id="camohex-${i}"></span></div>`;
+    cp.appendChild(d);
+    d.querySelector("input").addEventListener("input", (e) => { team.camo[i] = e.target.value.toUpperCase(); changed(); });
+  });
+  // presets
+  for (const [nm, p] of PRESETS) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "preset";
+    b.innerHTML = `<i>${["primary", "secondary", "accent"].map((k) => `<b style="background:${p.colors[k]}"></b>`).join("")}</i>${nm}`;
+    b.addEventListener("click", () => {
+      if (p.helmet) { const keep = { dirt: team.dirt, dyes: team.dyes, pieces: team.pieces }; team = Object.assign(clone(p), keep); delete team.logoUrl; }
+      else team.colors = Object.assign({}, p.colors);
+      changed(true);
+      if (p.logoUrl) takeLogo(p.logoUrl,           // a preset with its own logo: as if uploaded
+        `The ${nm} logo isn't on this page yet: the colours are set. Pick Upload… to add the logo yourself.`);
+    });
+    $("presets").appendChild(b);
+  }
+  // logo
+  for (const [k, nm] of [["moogles", "Moogle"], ["none", "None"], ["custom", "Your logo"]]) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "opt"; b.dataset.logo = k;
+    b.innerHTML = k === "custom" ? `<img id="logoThumb" alt="" hidden><span id="logoLabel">Upload…</span>` : nm;
+    b.addEventListener("click", () => {
+      if (k === "custom" && !team.customLogo) { $("logoFile").click(); return; }
+      team.logo = k; changed();
+    });
+    $("logoOpts").appendChild(b);
+  }
+  const replace = document.createElement("button");
+  replace.type = "button"; replace.className = "opt"; replace.id = "logoReplace"; replace.textContent = "Change…"; replace.hidden = true;
+  replace.addEventListener("click", () => $("logoFile").click());
+  $("logoOpts").appendChild(replace);
+  $("logoFile").addEventListener("change", async (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (f) await takeLogo(f);
+  });
+  // helmet finishes
+  for (const [host, path, list] of [["finishOpts", "finish", [["gloss", "Gloss"], ["satin", "Satin"], ["matte", "Matte"], ["high", "High gloss"]]],
+                                    ["maskFinishOpts", "maskFinish", [["gloss", "Gloss"], ["satin", "Satin"], ["matte", "Matte"], ["chrome", "Chrome"]]]]) {
+    for (const [k, nm] of list) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "opt"; b.dataset[path] = k; b.textContent = nm;
+      b.addEventListener("click", () => { team.helmet[path] = k; changed(); });
+      $(host).appendChild(b);
+    }
+  }
+  // roster
+  $("addPlayer").addEventListener("click", () => {
+    team.roster = team.roster || [];
+    if (team.roster.length >= 11) return;
+    team.roster.push({ name: "", number: String(Math.min(99, 10 + team.roster.length * 7)) });
+    changed();
+  });
+  // lettering typefaces
+  for (const [k, F] of Object.entries(FONTS)) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "opt"; b.dataset.font = k;
+    b.innerHTML = F.family ? `<span class="face" style="font-family:'${F.family}';font-weight:${F.weight}">13</span>${F.label}`
+      : `<span class="face" style="font-family:var(--font-label);font-weight:700">13</span>${F.label}`;
+    b.addEventListener("click", async () => {
+      team.font = k;
+      if (k !== "block") {
+        $("badge").hidden = false; $("badge").textContent = "Drawing the lettering";
+        const G = await fontGlyphs(k);
+        pw.postMessage({ type: "font", key: k, glyphs: G });
+      }
+      changed();
+    });
+    $("fontOpts").appendChild(b);
+  }
+  // helmet stripes
+  for (const [k, st] of Object.entries(TE.STRIPES)) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "opt"; b.dataset.style = k;
+    b.innerHTML = `<svg width="26" height="32" viewBox="0 0 26 32" aria-hidden="true"></svg>${st.label}`;
+    b.addEventListener("click", () => { team.helmet.style = k; changed(); });
+    $("stripeOpts").appendChild(b);
+  }
+  const H = $("helmetRows");
+  colourField(H, "helmet.shell", "Shell"); colourField(H, "helmet.stripe", "Stripe"); colourField(H, "helmet.pinstripe", "Pinstripe");
+  colourField(H, "helmet.facemask", "Facemask"); colourField(H, "helmet.chinstrap", "Chin strap"); colourField(H, "helmet.mouthguard", "Mouthguard");
+  for (const [host, k] of [["jerseyHome", "home"], ["jerseyAway", "away"]]) {
+    const h = $(host);
+    colourField(h, `jersey.${k}.body`, "Body"); colourField(h, `jersey.${k}.trim`, "Trim"); colourField(h, `jersey.${k}.numbers`, "Numbers");
+    colourField(h, `jersey.${k}.panels`, "Side panels", ["", k === "home" ? "Shade of the body" : "Same as the numbers"]);
+  }
+  colourField($("jerseyBase"), "jersey.baseLayer", "Sleeves");
+  const G = $("gloveRows");
+  colourField(G, "gloves.main", "Back of hand"); colourField(G, "gloves.palm", "Palm"); colourField(G, "gloves.trim", "Trim");
+  for (const [host, k] of [["pantsHome", "home"], ["pantsAway", "away"]]) {
+    const h = $(host);
+    colourField(h, `pants.${k}.main`, "Pants"); colourField(h, `pants.${k}.stripe`, "Stripe"); colourField(h, `pants.${k}.piping`, "Piping");
+  }
+  colourField($("pantsLeg"), "pants.leggings", "Leggings");
+  const F = $("feetRows");
+  colourField(F, "feet.socks", "Socks"); colourField(F, "feet.band", "Sock band"); colourField(F, "feet.cleats", "Cleats");
+  colourField(F, "feet.accent", "Cleat trim"); colourField(F, "feet.detail", "Laces and logo"); colourField(F, "feet.studs", "Studs");
+  // pieces
+  for (const [k, nm] of [["head", "Helmet"], ["body", "Jersey"], ["hands", "Gloves"], ["legs", "Pants"], ["feet", "Socks + cleats"]]) {
+    const l = document.createElement("label");
+    l.className = "toggle";
+    l.innerHTML = `<input type="checkbox" id="piece-${k}"> ${nm}`;
+    l.querySelector("input").addEventListener("change", (e) => {
+      team.pieces = PIECES.filter((p) => (p === k ? e.target.checked : (team.pieces || PIECES).includes(p)));
+      changed();
+    });
+    $("pieceOpts").appendChild(l);
+  }
+  // dirt
+  for (const [k, nm] of [["clean", "Clean"], ["worn", "Worn"], ["grass", "Grass-stained"], ["muddy", "Muddy"]]) {
+    const l = document.createElement("label");
+    l.className = "toggle";
+    l.innerHTML = `<input type="checkbox" id="dirt-${k}"${k === "clean" ? " disabled" : ""}> ${nm}`;
+    l.querySelector("input").addEventListener("change", (e) => {
+      team.dirt = ["clean", "worn", "grass", "muddy"].filter((d) => d === "clean" || (d === k ? e.target.checked : team.dirt.includes(d)));
+      changed();
+    });
+    $("dirtOpts").appendChild(l);
+  }
+  // text and toggles
+  const up = (s) => s.toUpperCase();
+  $("teamName").addEventListener("input", (e) => { team.name = e.target.value; changed(); });
+  $("wordmark").addEventListener("input", (e) => { e.target.value = up(e.target.value).replace(/[^A-Z '.\-]/g, ""); team.jersey.wordmark = e.target.value; changed(); });
+  $("pname").addEventListener("input", (e) => { e.target.value = up(e.target.value).replace(/[^A-Z '.\-]/g, ""); team.jersey.name = e.target.value; changed(); });
+  $("pnum").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/[^0-9]/g, "").slice(0, 2); team.jersey.number = e.target.value; changed(); });
+  $("crest").addEventListener("change", (e) => { team.jersey.crest = e.target.checked; changed(); });
+  $("jerseyAwayOn").addEventListener("change", (e) => { team.jersey.awayOn = e.target.checked; changed(); });
+  $("pantsAwayOn").addEventListener("change", (e) => { team.pants.awayOn = e.target.checked; changed(); });
+  $("dyes").addEventListener("change", (e) => { team.dyes = e.target.checked; changed(); });
+}
+
+const FONTS = {
+  block: { label: "Block" },
+  collegiate: { label: "Collegiate", family: "Graduate", weight: 400 },
+  slab: { label: "Slab", family: "Alfa Slab One", weight: 400 },
+  modern: { label: "Modern", family: "Teko", weight: 600 },
+  tall: { label: "Tall", family: "Bebas Neue", weight: 400 },
+  bold: { label: "Bold", family: "Oswald", weight: 700 },
+  arcade: { label: "Arcade", family: "Bungee", weight: 400 },
+};
+const glyphCache = {};
+/**
+ * A typeface's glyphs as the jersey's lettering takes them (like art/digits and art/letters:
+ * white with a gold outline of 4% of the height, digits 450 px tall, letters 540, rows bottom-up,
+ * trimmed to their ink).
+ */
+async function fontGlyphs(key) {
+  if (glyphCache[key]) return glyphCache[key];
+  const F = FONTS[key];
+  const sets = [["digits", "0123456789", 450], ["letters", "ABCDEFGHIJKLMNOPQRSTUVWXYZ'.-", 540]];
+  await document.fonts.load(`${F.weight} 100px "${F.family}"`, sets.map((x) => x[1]).join(""));
+  const G = { arrays: {}, meta: {} }, c = document.createElement("canvas"), g = c.getContext("2d", { willReadFrequently: true });
+  for (const [folder, chars, H] of sets) {
+    const outline = Math.round(H * 0.04), margin = 6;
+    g.font = `${F.weight} 100px "${F.family}"`;
+    let top = 0, bot = 0;
+    for (const ch of chars.replace(/['.\-]/g, "")) {
+      const m = g.measureText(ch);
+      top = Math.max(top, m.actualBoundingBoxAscent); bot = Math.max(bot, m.actualBoundingBoxDescent);
+    }
+    const k = (H - 2 * margin - 2 * outline) / Math.max(top + bot, 1), base = margin + outline + top * k;
+    const W = Math.ceil(H * 1.7);
+    c.width = W; c.height = H;
+    for (const ch of chars) {
+      g.clearRect(0, 0, W, H);
+      g.font = `${F.weight} ${100 * k}px "${F.family}"`;
+      g.textAlign = "center"; g.textBaseline = "alphabetic"; g.lineJoin = "round";
+      g.lineWidth = 2 * outline; g.strokeStyle = "#E8B830"; g.strokeText(ch, W / 2, base);
+      g.fillStyle = "#F6F6F6"; g.fillText(ch, W / 2, base);
+      const d = g.getImageData(0, 0, W, H).data;
+      let x0 = W, x1 = -1;
+      for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) if (d[4 * (y * W + x) + 3] > 5) { if (x < x0) x0 = x; if (x > x1) x1 = x; break; }
+      if (x1 < x0) { x0 = 0; x1 = 0; }
+      const w = x1 - x0 + 1, out = new Uint8Array(4 * w * H);
+      for (let y = 0; y < H; y++) out.set(d.subarray(4 * ((H - 1 - y) * W + x0), 4 * ((H - 1 - y) * W + x1 + 1)), 4 * y * w);
+      G.arrays[`${folder}/${ch}`] = { data: out, shape: [H, w, 4] };
+      G.meta[`${folder}/${ch}`] = { h: H, w, ink: [0, w - 1] };
+    }
+  }
+  glyphCache[key] = G;
+  return G;
+}
+
+const LOGO_SIZE = 512;
+async function takeLogo(src, failHint) {
+  try {
+    const img = new Image();
+    const url = typeof src === "string" ? src : URL.createObjectURL(src);
+    await new Promise((ok, bad) => { img.onload = ok; img.onerror = () => bad(new Error("That file isn't an image the browser can open.")); img.src = url; });
+    const c = document.createElement("canvas");
+    c.width = c.height = LOGO_SIZE;
+    const g = c.getContext("2d");
+    const k = Math.min(LOGO_SIZE / img.naturalWidth, LOGO_SIZE / img.naturalHeight);
+    const w = img.naturalWidth * k, h = img.naturalHeight * k;
+    g.imageSmoothingQuality = "high";
+    g.drawImage(img, (LOGO_SIZE - w) / 2, (LOGO_SIZE - h) / 2, w, h);
+    const data = g.getImageData(0, 0, LOGO_SIZE, LOGO_SIZE).data;
+    const dataUrl = c.toDataURL("image/png");
+    team.customLogo = { w: LOGO_SIZE, h: LOGO_SIZE, rgba: new Uint8Array(data.buffer.slice(0)), id: Date.now() };
+    team.logo = "custom";
+    $("logoThumb").src = dataUrl; $("logoThumb").hidden = false; $("logoLabel").textContent = "Your logo";
+    try { localStorage.setItem("gridiron-team-logo", dataUrl); } catch (err) { /* too big or no storage */ }
+    if (typeof src !== "string") URL.revokeObjectURL(url);
+    changed();
+  } catch (err) {
+    $("logoHint").textContent = failHint || err.message;
+  }
+}
+
+function renderRoster() {
+  const box = $("roster"), list = team.roster || [];
+  if (box.children.length !== list.length) {
+    box.innerHTML = "";
+    list.forEach((p, i) => {
+      const row = document.createElement("div");
+      row.className = "player";
+      row.innerHTML = `<input class="text" maxlength="16" aria-label="Player ${i + 2} name" placeholder="NAME"><input class="text" maxlength="2" inputmode="numeric" aria-label="Player ${i + 2} number"><button type="button" class="opt rm" aria-label="Remove player ${i + 2}">Remove</button>`;
+      const [nm, no, rm] = row.children;
+      nm.addEventListener("input", () => { nm.value = nm.value.toUpperCase().replace(/[^A-Z '.\-]/g, ""); team.roster[i].name = nm.value; changed(); });
+      no.addEventListener("input", () => { no.value = no.value.replace(/[^0-9]/g, "").slice(0, 2); team.roster[i].number = no.value; changed(); });
+      rm.addEventListener("click", () => { team.roster.splice(i, 1); box.innerHTML = ""; changed(); });
+      box.appendChild(row);
+    });
+  }
+  list.forEach((p, i) => {
+    const [nm, no] = box.children[i].children;
+    if (document.activeElement !== nm) nm.value = p.name || "";
+    if (document.activeElement !== no) no.value = p.number || "";
+  });
+  $("addPlayer").disabled = list.length >= 11;
+}
+
+function stripeIcon(svg, style) {
+  const bands = TE.STRIPES[style].bands, X = 13, half = 10, k = half / 0.13;
+  let s = `<ellipse cx="13" cy="16" rx="10.5" ry="14" fill="${hexOf(team.helmet.shell)}" stroke="rgba(0,0,0,.35)"/>`;
+  for (const [lo, hi, role] of bands) {
+    const c = hexOf(role === "a" ? team.helmet.stripe : team.helmet.pinstripe);
+    for (const sgn of lo === 0 ? [0] : [-1, 1]) {
+      const x0 = lo === 0 ? X - hi * k : sgn > 0 ? X + lo * k : X - hi * k, w = lo === 0 ? 2 * hi * k : (hi - lo) * k;
+      s += `<rect x="${x0.toFixed(2)}" y="3" width="${Math.max(w, 0.8).toFixed(2)}" height="26" fill="${c}"/>`;
+    }
+  }
+  svg.innerHTML = `<defs><clipPath id="cl-${style}"><ellipse cx="13" cy="16" rx="10.5" ry="14"/></clipPath></defs><g clip-path="url(#cl-${style})">${s}</g>`;
+}
+
+function render() {
+  for (const k of ["primary", "secondary", "accent"]) {
+    $("pal-" + k).value = team.colors[k].toLowerCase();
+    if (document.activeElement !== $("palhex-" + k)) $("palhex-" + k).value = team.colors[k];
+  }
+  team.camo.forEach((c, i) => { $("camo-" + i).value = c.toLowerCase(); $("camohex-" + i).textContent = c; });
+  document.querySelectorAll("[data-logo]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.logo === team.logo));
+  document.querySelectorAll("[data-font]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.font === (team.font || "block")));
+  document.querySelectorAll("[data-finish]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.finish === (team.helmet.finish || "gloss")));
+  document.querySelectorAll("[data-mask-finish]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.maskFinish === (team.helmet.maskFinish || "gloss")));
+  renderRoster();
+  if (meshes.head) { meshes.head.material.roughness = { gloss: 0.32, satin: 0.5, matte: 0.78, high: 0.18 }[team.helmet.finish || "gloss"]; needsDraw = true; }
+  $("logoReplace").hidden = !team.customLogo;
+  document.querySelectorAll("[data-style]").forEach((b) => { b.setAttribute("aria-pressed", b.dataset.style === team.helmet.style); stripeIcon(b.querySelector("svg"), b.dataset.style); });
+  if (document.activeElement !== $("teamName")) $("teamName").value = team.name;
+  for (const [id, v] of [["wordmark", team.jersey.wordmark], ["pname", team.jersey.name], ["pnum", team.jersey.number]])
+    if (document.activeElement !== $(id)) $(id).value = v || "";
+  $("crest").checked = team.jersey.crest !== false;
+  $("crest").disabled = team.logo === "none";
+  $("jerseyAwayOn").checked = !!team.jersey.awayOn;
+  $("pantsAwayOn").checked = !!team.pants.awayOn;
+  $("jerseyAway").classList.toggle("off", !team.jersey.awayOn);
+  $("pantsAway").classList.toggle("off", !team.pants.awayOn);
+  for (const k of ["clean", "worn", "grass", "muddy"]) $("dirt-" + k).checked = team.dirt.includes(k);
+  for (const k of PIECES) $("piece-" + k).checked = (team.pieces || PIECES).includes(k);
+  $("dyes").checked = team.dyes !== false;
+  paintFields();
+  $("camoCard").hidden = !JSON.stringify([team.helmet, team.jersey, team.gloves, team.pants, team.feet]).includes('"camo"');
+  // the page takes the team's primary
+  const p = team.colors.primary, n = parseInt(p.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  document.documentElement.style.setProperty("--team", p);
+  document.documentElement.style.setProperty("--team-ink", lum > 0.6 ? "#111" : "#fff");
+  $("plateName").textContent = team.name || "My team";
+  $("plateDots").innerHTML = ["primary", "secondary", "accent"].map((k) => `<span style="background:${team.colors[k]}" title="${k}"></span>`).join("");
+  estimate();
+}
+
+/** The team as the engine takes it (away kits only when included). */
+function engineTeam() {
+  const t = JSON.parse(JSON.stringify(team, (k, v) => (k === "customLogo" ? undefined : v)));
+  if (team.customLogo) t.customLogo = team.customLogo;
+  if (t.logo === "custom" && !t.customLogo) t.logo = "none";
+  t.roster = team.roster && team.roster.length ? [{ name: team.jersey.name, number: team.jersey.number }].concat(team.roster) : undefined;
+  t.previewDirt = previewDirt;
+  t.jersey.away = team.jersey.awayOn ? t.jersey.away : null;
+  t.pants.away = team.pants.awayOn ? t.pants.away : null;
+  return t;
+}
+
+function estimate() {
+  const players = 1 + ((team.roster || []).length);
+  const want = team.pieces || PIECES;
+  const kits = { head: 1, body: (team.jersey.awayOn ? 2 : 1) * players, hands: 1, legs: team.pants.awayOn ? 2 : 1, feet: 1 };
+  for (const k of PIECES) if (!want.includes(k)) delete kits[k];
+  if (!want.length) { $("est").textContent = "Pick at least one piece."; return; }
+  const nd = team.dirt.length, versions = Object.values(kits).reduce((a, b) => a + b, 0) * nd;
+  const dirty = team.dirt.filter((d) => d !== "clean").length;
+  let mb = Object.values(kits).reduce((a, b) => a + b, 0) * (0.35 + dirty * 1.85) + (want.includes("body") ? 7.5 * players : 0);
+  if (team.logo !== "moogles") mb += 9.5 * ["body", "hands", "legs"].filter((k) => want.includes(k)).length / 3;
+  $("est").textContent = `${versions} versions · about ${Math.round(mb)} MB · about ${Math.max(1, Math.round((versions * 3 + (dirty ? 30 : 0)) / Math.max(1, workerCount()) / 60 + 0.4))} min`;
+}
+const workerCount = () => Math.max(1, Math.min(3, (navigator.hardwareConcurrency || 4) - 1));
+
+// ------------------------------------------------------------- 3D stage
+let renderer, scene, camera, controls, meshes = {}, textures = {}, kit = "home", needsDraw = true, previewDirt = "clean";
+const VIEWS = {
+  front: [[0.6, 1.05, 3.55], [0, 0.84, 0]], back: [[-0.6, 1.05, -3.55], [0, 0.84, 0]],
+  helmet: [[0.55, 1.58, 0.62], [0, 1.47, 0.02]], cleats: [[0.6, 0.42, 0.95], [0, 0.12, 0.05]],
+};
+function initStage() {
+  const canvas = $("view");
+  if (!window.THREE) { $("status").textContent = "The 3D preview couldn't load. You can still make the add-on."; return false; }
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); }
+  catch (e) { $("status").textContent = "3D isn't available in this browser. You can still make the add-on."; return false; }
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(30, 1, 0.05, 50);
+  scene.add(new THREE.HemisphereLight(0xe8efff, 0x2a3a2c, 0.85));
+  const key = new THREE.DirectionalLight(0xffffff, 1.25); key.position.set(1.6, 2.6, 2.4); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xcfe0ff, 0.65); rim.position.set(-2, 1.8, -2.2); scene.add(rim);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(-2, 0.6, 2); scene.add(fill);
+  controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true; controls.dampingFactor = 0.12; controls.minDistance = 0.35; controls.maxDistance = 5;
+  controls.addEventListener("change", () => { needsDraw = true; });
+  setView("front");
+  new ResizeObserver(resize).observe($("stage"));
+  resize();
+  const loop = () => { if (controls.update() || needsDraw) { renderer.render(scene, camera); needsDraw = false; } requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+  return true;
+}
+function resize() {
+  if (!renderer) return;
+  const r = $("stage").getBoundingClientRect();
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / Math.max(r.height, 1);
+  camera.updateProjectionMatrix();
+  needsDraw = true;
+}
+function setView(v) {
+  if (!camera) return;
+  const [p, t] = VIEWS[v];
+  camera.position.set(...p); controls.target.set(...t); controls.update();
+  document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === v));
+  needsDraw = true;
+}
+function addGeometry(geo) {
+  for (const [slot, g] of Object.entries(geo)) {
+    const bg = new THREE.BufferGeometry();
+    bg.setAttribute("position", new THREE.BufferAttribute(g.pos, 3));
+    bg.setAttribute("normal", new THREE.BufferAttribute(g.nrm, 3));
+    bg.setAttribute("uv", new THREE.BufferAttribute(g.uv, 2));
+    bg.setIndex(new THREE.BufferAttribute(g.idx, 1));
+    const mat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: slot === "head" ? 0.32 : 0.78, metalness: 0, side: THREE.DoubleSide });
+    const m = new THREE.Mesh(bg, mat);
+    scene.add(m);
+    meshes[slot] = m;
+  }
+  needsDraw = true;
+}
+function showTextures() {
+  for (const [slot, m] of Object.entries(meshes)) {
+    const set_ = textures[slot];
+    if (!set_) continue;
+    const t = set_[kit] || set_.home;
+    if (m.material.map !== t) { m.material.map = t; m.material.color.set(0xffffff); m.material.needsUpdate = true; }
+  }
+  needsDraw = true;
+}
+function takeTextures(slots) {
+  for (const [slot, kits] of Object.entries(slots)) {
+    textures[slot] = textures[slot] || {};
+    for (const [k, rgba] of Object.entries(kits)) {
+      const old = textures[slot][k];
+      const t = new THREE.DataTexture(new Uint8Array(rgba.buffer), 1024, 1024, THREE.RGBAFormat);
+      t.encoding = THREE.sRGBEncoding; t.flipY = false; t.generateMipmaps = true;
+      t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
+      t.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 1;
+      t.needsUpdate = true;
+      textures[slot][k] = t;
+      if (old) old.dispose();
+    }
+  }
+  showTextures();
+}
+
+// -------------------------------------------------------------- workers
+const pw = new Worker("worker.js");
+let seq = 0, ready = false, pending = 0, again = false, previewTimer = 0, lastLetters = "";
+pw.onmessage = (e) => {
+  const m = e.data;
+  if (m.type === "status") { $("badge").hidden = !m.text; $("badge").textContent = m.text; if (!ready) $("status").textContent = m.text + "…"; }
+  else if (m.type === "ready") {
+    ready = true;
+    $("status").textContent = "";
+    if (renderer) addGeometry(m.geometry);
+    $("needs").textContent = `Needs Aetherial Gridiron ${m.version || ""} enabled, with its pieces on.`;
+    $("makeBtn").disabled = false;
+    requestPreview(true);
+  } else if (m.type === "textures" || m.type === "error") {
+    pending = Math.max(0, pending - 1);
+    if (m.type === "textures") { if (renderer) takeTextures(m.slots); }
+    else { $("badge").hidden = false; $("badge").textContent = "Preview: " + m.message; }
+    if (!pending && again) { again = false; sendPreview(); }
+  }
+};
+function lettersKey() {
+  const j = team.jersey;
+  return JSON.stringify([j.name, j.number, j.wordmark, j.crest, team.logo, team.colors, team.customLogo ? team.customLogo.id : 0, team.font || "block"]);
+}
+/** Recolour now (fast); re-letter the jersey after it when the lettering changed (slower). */
+function sendPreview() {
+  if (pending) { again = true; return; }
+  const t = engineTeam(), k = lettersKey();
+  pending++;
+  pw.postMessage({ type: "preview", seq: ++seq, team: t });
+  if (k !== lastLetters) { lastLetters = k; pending++; pw.postMessage({ type: "letters", seq: ++seq, team: t }); }
+}
+function requestPreview(now) {
+  if (!ready) return;
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(sendPreview, now ? 0 : 140);
+}
+function changed(full) {
+  render();
+  save();
+  requestPreview();
+}
+
+// ----------------------------------------------------------- make and save
+let made = null, zip = null, filename = "";
+async function make() {
+  const t = engineTeam(), frac = {}, results = {};
+  const nP = t.roster ? t.roster.length : 1;
+  const want = team.pieces || PIECES;
+  if (!want.length) { $("msg").className = "msg err"; $("msg").textContent = "Pick at least one piece."; return; }
+  const slots = (want.includes("body") ? (nP > 1 ? t.roster.map((_, i) => `body:${i}`) : ["body"]) : [])
+    .concat(["legs", "head", "hands", "feet"].filter((k) => want.includes(k)));
+  $("makeBtn").disabled = true; $("saveBtn").hidden = true; $("progress").hidden = false;
+  $("msg").className = "msg"; $("msg").textContent = "Making your add-on. Keep this tab open.";
+  const names = { head: "Helmet", body: "Jersey", hands: "Gloves", legs: "Pants", feet: "Socks + cleats" };
+  slots.forEach((s_, i) => { if (s_.startsWith("body:")) { const p = t.roster[+s_.slice(5)]; names[s_] = `Jersey ${(p.name || "").trim() || "#" + (p.number || "")}`.trim(); } });
+  const line = {};
+  $("pieces").innerHTML = slots.map((s_) => `<span id="pc-${s_}">${names[s_]}: waiting</span>`).join("");
+  const upd = () => { $("fill").style.width = `${Math.round(100 * slots.reduce((a, s) => a + (frac[s] || 0), 0) / slots.length)}%`; };
+  const queue = slots.slice(), n = Math.min(workerCount(), slots.length);
+  try {
+    await Promise.all(Array.from({ length: n }, () => new Promise((resolve, reject) => {
+      const w = new Worker("worker.js");
+      const next = () => {
+        const s = queue.shift();
+        if (!s) { w.terminate(); resolve(); return; }
+        const slot = s.split(":")[0], player = s.includes(":") ? +s.split(":")[1] : null;
+        w.postMessage({ type: "make", slot, player, job: s, team: t, glyphs: slot === "body" && t.font && t.font !== "block" ? glyphCache[t.font] : null });
+      };
+      w.onmessage = (e) => {
+        const m = e.data;
+        const job = m.slot && m.player != null ? `${m.slot}:${m.player}` : m.slot;
+        if (m.type === "progress") { frac[job] = m.f; $("pc-" + job).textContent = `${names[job]}: ${Math.round(m.f * 100)}%`; upd(); }
+        else if (m.type === "made") { results[job] = m; frac[job] = 1; const el = $("pc-" + job); el.textContent = `${names[job]}: done`; el.className = "done"; upd(); next(); }
+        else if (m.type === "error") { w.terminate(); reject(new Error(`${names[m.slot] || "A piece"}: ${m.message}`)); }
+      };
+      w.onerror = (ev) => { w.terminate(); reject(new Error(ev.message || "A worker stopped.")); };
+      next();
+    })));
+    $("msg").textContent = "Packing the add-on…";
+    await new Promise((r) => setTimeout(r, 30));
+    const T = await (await fetch("team.json")).json();
+    const madeBy = {};
+    for (const s of TE.SLOTS) {
+      const parts = slots.filter((j) => j.split(":")[0] === s).map((j) => results[j]).filter(Boolean);
+      if (parts.length) madeBy[s] = { options: [].concat(...parts.map((r) => r.options)), files: Object.assign({}, ...parts.map((r) => r.files)) };
+    }
+    const out = TE.buildAddon(T, t, TE.SLOTS, madeBy);
+    zip = out.zip;
+    filename = `Aetherial Gridiron Team - ${(team.name || "My Team").replace(/[^A-Za-z0-9 '.-]+/g, "").trim() || "My Team"}.zip`;
+    $("msg").className = "msg ok";
+    $("msg").textContent = `Ready: ${filename} (${(zip.length / 1e6).toFixed(1)} MB).`;
+    $("saveBtn").textContent = `Save ${filename}`;
+    $("saveBtn").hidden = false;
+  } catch (err) {
+    $("msg").className = "msg err";
+    $("msg").textContent = `${err.message} Try again; if it keeps failing, pick fewer dirt versions.`;
+  }
+  $("makeBtn").disabled = false;
+}
+async function saveZip() {
+  const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+  if (!dl) { $("msg").className = "msg err"; $("msg").textContent = "Saving isn't available in this view. Open the page in claude.ai to save the file."; return; }
+  try {
+    await dl.save({ filename, data: new Blob([zip], { type: "application/zip" }) });
+    $("msg").className = "msg ok"; $("msg").textContent = `Saved ${filename}. Import it in Penumbra.`;
+  } catch (err) {
+    const code = err && err.code;
+    $("msg").className = "msg" + (code === "declined" ? "" : " err");
+    $("msg").textContent = code === "declined" ? "Not saved. Press Save again when you're ready." :
+      code === "rate_limited" ? "A save prompt is already open. Finish that one first." : `Couldn't save: ${(err && err.message) || code}.`;
+  }
+}
+
+// ------------------------------------------------------------------- start
+buildForm();
+if (team.logo === "custom") team.logo = "none";
+try { const u = localStorage.getItem("gridiron-team-logo"); if (u) takeLogo(u); } catch (e) { /* no storage */ }
+render();
+document.querySelectorAll("[data-kit]").forEach((b) => b.addEventListener("click", () => {
+  kit = b.dataset.kit;
+  document.querySelectorAll("[data-kit]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.kit === kit));
+  showTextures();
+}));
+document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+document.querySelectorAll("[data-pdirt]").forEach((b) => b.addEventListener("click", () => {
+  previewDirt = b.dataset.pdirt;
+  document.querySelectorAll("[data-pdirt]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.pdirt === previewDirt));
+  requestPreview(true);
+}));
+$("makeBtn").addEventListener("click", make);
+$("saveBtn").addEventListener("click", saveZip);
+$("sheet").addEventListener("submit", (e) => e.preventDefault());
+initStage();
+pw.postMessage({ type: "init" });
+if (team.font && team.font !== "block" && FONTS[team.font]) {
+  const k = team.font;
+  team.font = "block";
+  fontGlyphs(k).then((G) => { pw.postMessage({ type: "font", key: k, glyphs: G }); team.font = k; changed(); }).catch(() => {});
+}
+</script>
+</body>
+</html>
