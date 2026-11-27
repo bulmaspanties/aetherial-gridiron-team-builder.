@@ -150,6 +150,109 @@
     none: { label: "None", bands: [] },
   };
 
+  /** Pants side stripe styles: bands by distance from the stripe's centre line down the outside
+   * of the leg (m, round the leg), in roles "a" (the stripe colour) and "b" (the piping); the
+   * rest is the pants colour. "classic" is the release's own stripe. */
+  const PANTS_STRIPES = {
+    classic: { label: "Stripe + piping", bands: [[0, 0.010, "a"], [0.010, 0.014, "b"]] },
+    wide: { label: "Wide stripe", bands: [[0, 0.017, "a"], [0.017, 0.021, "b"]] },
+    narrow: { label: "Narrow stripe", bands: [[0, 0.005, "a"], [0.005, 0.008, "b"]] },
+    split: { label: "Split stripe", bands: [[0, 0.0025, "b"], [0.0025, 0.0105, "a"], [0.0105, 0.0135, "b"]] },
+    double: { label: "Double stripe", bands: [[0.0035, 0.0115, "a"]] },
+    triple: { label: "Triple stripe", bands: [[0, 0.0045, "a"], [0.0075, 0.0125, "b"]] },
+    plain: { label: "No stripe", bands: [] },
+  };
+  /** Sleeve stripe styles: bands by distance from the sleeve hem (m), inside the knit cuff the
+   * build raises (the bake's stripes.sleeve_top), in the jersey's "trim" or "numbers" colour;
+   * the rest of the cuff is the body colour. "classic" is the release's own stripes. */
+  const SLEEVE_STRIPES = {
+    classic: { label: "Two stripes", bands: [[0.005, 0.016, "trim"], [0.016, 0.022, "numbers"], [0.022, 0.033, "trim"], [0.033, 0.037, "numbers"]] },
+    three: { label: "Three stripes", bands: [[0.005, 0.011, "trim"], [0.011, 0.015, "numbers"], [0.015, 0.021, "trim"], [0.021, 0.025, "numbers"], [0.025, 0.031, "trim"], [0.031, 0.035, "numbers"]] },
+    wide: { label: "One wide stripe", bands: [[0.005, 0.029, "trim"], [0.029, 0.034, "numbers"]] },
+    split: { label: "Wide + narrow", bands: [[0.004, 0.020, "trim"], [0.024, 0.030, "trim"], [0.030, 0.034, "numbers"]] },
+    trim: { label: "Trim at the hem", bands: [[0, 0.008, "trim"]] },
+    plain: { label: "No stripes", bands: [] },
+  };
+  // the families the build paints (export_penumbra's Moogles references) and their region codes
+  const FAMILY = { a: "blue", b: "white", main: "gold", body: "blue", trim: "gold", numbers: "white", band: "gold" };
+  const FAMILY_REG = { blue: 1, gold: 2, white: 3 };
+  /** Sock stripe styles: bands by depth below a line 5 cm above the pants hem (m: 0.05 is the
+   * hem; the bake's stripe map for the feet), in the socks' "band" colour; the rest of the sock is
+   * as it is. "none" is the release's plain sock. */
+  const SOCK_STRIPES = {
+    none: { label: "No stripes", bands: [] },
+    two: { label: "Two stripes", bands: [[0.070, 0.085, "band"], [0.097, 0.112, "band"]] },
+    three: { label: "Three stripes", bands: [[0.066, 0.076, "band"], [0.084, 0.094, "band"], [0.102, 0.112, "band"]] },
+    wide: { label: "Wide band", bands: [[0.068, 0.110, "band"]] },
+    top: { label: "Band at the top (shorts)", bands: [[0.022, 0.045, "band"]] },
+  };
+  const PANTS_REACH = Math.max(...Object.values(PANTS_STRIPES).map((s) => Math.max(0, ...s.bands.map((b) => b[1])))) + 0.003;
+
+  /**
+   * A stripe style drawn into a piece's logo-free paint (sRGB floats, top row first): every
+   * texel in the stripe zone (from the bake's stripe map, `D.stripe`) takes its new family's
+   * reference colour (the Moogles blue, gold or white) at its own shading, so the team
+   * recolour then gives it the team's colours and the dyes find it. The pants zone is every
+   * texel within reach of the side line below the waistband (wider than any style, so a
+   * narrower style clears a wider one); the jersey's is the sleeve cuff. Texels that optional
+   * parts take a solid colour from (the towel, the tail pieces, the shorts' hem: `meta.locks`)
+   * keep theirs. Returns {img, reg} (new arrays), or null for the release's own stripes or when
+   * the bake has no stripe map.
+   */
+  function restripe(C, D, img, size, slot, style) {
+    const S = C.stripes, map = D.stripe;
+    if (!S || !map || !style || style === "classic" || style === "none") return null;
+    const st = (slot === "legs" ? PANTS_STRIPES : slot === "feet" ? SOCK_STRIPES : SLEEVE_STRIPES)[style];
+    if (!st) return null;
+    const ref = {
+      blue: C.moogles_blue.map(srgbToLin), gold: C.moogles_gold.map(srgbToLin), white: [0.965, 0.965, 0.965].map(srgbToLin),
+    };
+    const B = ref.blue, G = ref.gold, W = ref.white;
+    const m = [B[0], G[0], W[0], B[1], G[1], W[1], B[2], G[2], W[2]];
+    const det = m[0] * (m[4] * m[8] - m[5] * m[7]) - m[1] * (m[3] * m[8] - m[5] * m[6]) + m[2] * (m[3] * m[7] - m[4] * m[6]);
+    const inv = [
+      (m[4] * m[8] - m[5] * m[7]) / det, (m[2] * m[7] - m[1] * m[8]) / det, (m[1] * m[5] - m[2] * m[4]) / det,
+      (m[5] * m[6] - m[3] * m[8]) / det, (m[0] * m[8] - m[2] * m[6]) / det, (m[2] * m[3] - m[0] * m[5]) / det,
+      (m[3] * m[7] - m[4] * m[6]) / det, (m[1] * m[6] - m[0] * m[7]) / det, (m[0] * m[4] - m[1] * m[3]) / det,
+    ];
+    const n = size * size, strip = Math.ceil(size * C.strip), scale = (slot === "feet" ? S.sock_range || 0.45 : S.range) / 255;
+    const locked = new Uint8Array(n), rl = Math.max(1, Math.round(3 * size / 2048));
+    for (const [lx, ly] of (D.meta && D.meta.locks) || []) {
+      const cx = Math.floor(lx * size), cy = Math.floor(ly * size);
+      for (let y = Math.max(cy - rl, 0); y <= Math.min(cy + rl, size - 1); y++)
+        for (let x = Math.max(cx - rl, 0); x <= Math.min(cx + rl, size - 1); x++) locked[y * size + x] = 1;
+    }
+    const out = new Float32Array(img), reg = new Uint8Array(D.reg);
+    const nc = D.stripe_shape ? D.stripe_shape[2] : 2;
+    const legs = slot === "legs", feet = slot === "feet", top = S.sleeve_top;
+    for (let i = strip * size; i < n; i++) {
+      if (locked[i]) continue;
+      const d = map[nc * i] * scale;
+      let fam;
+      if (feet) {
+        // socks only, and only the texels in a band: the rest keeps its paint (and the dirt fit)
+        if (map[nc * i + 1] < 128) continue;
+        fam = null;
+        for (const [lo, hi, role] of st.bands) if (d >= lo && d < hi) { fam = role; break; }
+        if (!fam) continue;
+      } else if (legs) {
+        if (map[nc * i] === 255 || d >= PANTS_REACH || map[nc * i + 1] * scale < S.waistband) continue;
+        fam = "main";
+      } else {
+        if (map[nc * i] === 255 || d >= top) continue;
+        fam = "body";
+      }
+      if (!feet) for (const [lo, hi, role] of st.bands) if (d >= lo && d < hi) { fam = role; break; }
+      const l0 = srgbToLin(img[3 * i]), l1 = srgbToLin(img[3 * i + 1]), l2 = srgbToLin(img[3 * i + 2]);
+      const wb = inv[0] * l0 + inv[1] * l1 + inv[2] * l2, wg = inv[3] * l0 + inv[4] * l1 + inv[5] * l2, ww = inv[6] * l0 + inv[7] * l1 + inv[8] * l2;
+      if (Math.min(wb, wg, ww) < -0.12) continue;           // not one of the three (mud, skin): as it is
+      const shade = Math.max(wb, 0) + Math.max(wg, 0) + Math.max(ww, 0), f = FAMILY[fam], r = ref[f];
+      for (let ch = 0; ch < 3; ch++) out[3 * i + ch] = clamp01(linToSrgb(shade * r[ch]));
+      reg[i] = FAMILY_REG[f];
+    }
+    return { img: out, reg };
+  }
+
   /**
    * The helmet's texture at the colour IDs' size (2K, sRGB floats, top row first), as the build
    * paints it (make_shell_textures, 4K: stripes, the logo on both sides, wear), the export
@@ -1297,9 +1400,11 @@
       kits.push({ kit: "", label: "", img });
     } else if (slot === "body") {
       const j = team.jersey;
-      const canvas = ctx.jerseyCanvas ? ctx.jerseyCanvas() : base();
+      let canvas = ctx.jerseyCanvas ? ctx.jerseyCanvas() : base(), reg = D.reg;
+      const rs = restripe(C, D, canvas, size, "body", j.sleeves);
+      if (rs) ({ img: canvas, reg } = rs);
       // the mesh side panels: the darker blue of the fabric (export_penumbra.away_kit's test)
-      const { panel, typical } = panelMask(C, canvas, D.reg, size);
+      const { panel, typical } = panelMask(C, canvas, reg, size);
       for (const [kit, cols] of [["home", j.home], ["away", j.away]]) {
         if (!cols) continue;
         // blue fabric, gold trim, white lettering and stripes, each in the kit's colour; the
@@ -1324,7 +1429,7 @@
       if (team.logo === "custom" && team.customLogo) paintSpots(D, img, size, ctx.pm(), team.customLogo);
       kits.push({ kit: "", label: "", img });
     } else if (slot === "legs") {
-      const p = team.pants, img0 = base();
+      const p = team.pants, rs = restripe(C, D, base(), size, "legs", p.style), img0 = rs ? rs.img : base();
       if (BUILTIN[team.logo] && !ctx.skipLogos) pasteLogos(D, img0, size, team.logo);
       for (const [kit, cols] of [["home", p.home], ["away", p.away]]) {
         if (!cols) continue;
@@ -1335,7 +1440,7 @@
         kits.push({ kit, label: kit === "home" ? "Home" : "Away", img });
       }
     } else if (slot === "feet") {
-      const f = team.feet, img0 = base();
+      const f = team.feet, rs = restripe(C, D, base(), size, "feet", f.stripes), img0 = rs ? rs.img : base();
       // socks above the cleat collar, cleats below (by height on the body)
       const pm = ctx.pm(), part = new Uint8Array(n);
       for (let i = 0; i < n; i++) part[i] = pm.pos[3 * i + 2] > 0.13 ? 1 : 0;
@@ -1698,6 +1803,7 @@
 
   return {
     f32, toByte, BYTE, LIN, srgbToLin, linToSrgb, hexToRgb, rng, slotData, positionMap, lowerEdge, STRIPES,
+    PANTS_STRIPES, SLEEVE_STRIPES, SOCK_STRIPES, restripe,
     paintHelmet, makeRecolour, fillBackground, noise3, fbm, dirtMasks, applyDirt, camoMap, LUMA,
     dyeClasses, dirtyClasses, kmeans, allocKmeans, topEigen, quantile, colorTableAndId, colorRow, toHalf,
     writeMtrl, idTex, ROW_TEMPLATE, resolve, teamMap, dyeColors, awayKit, panelMask, recolourImage, setStrip, pasteLogos,

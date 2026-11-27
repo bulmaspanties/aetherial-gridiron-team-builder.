@@ -6,13 +6,13 @@ page builds a small Penumbra add-on in your browser; nothing is uploaded anywher
 
 ## How to use it
 
-1. Install **Aetherial Gridiron 0.3.2** in Penumbra and enable it, with the pieces you want on.
+1. Install **Aetherial Gridiron 0.5.0** in Penumbra and enable it, with the pieces you want on.
 2. Open the team builder, pick a preset or set your team's colours, logo, name and number.
 3. Press **Make**, then **Save**: you get `Aetherial Gridiron Team - <name>.zip`.
 4. In Penumbra, **Import Mod** and pick that file (rename it to `.pmp` if Penumbra doesn't list it).
    Enable it with a **higher priority** than Aetherial Gridiron.
 
-This version of the page makes add-ons for Aetherial Gridiron 0.3.2. After a new release of the
+This version of the page makes add-ons for Aetherial Gridiron 0.5.0. After a new release of the
 mod, make your add-on again on the updated page.
 
 ## Hosting

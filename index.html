@@ -7,7 +7,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Aetherial Gridiron Team Builder">
 <meta property="og:description" content="Make your own team for Aetherial Gridiron, the American football mod for FFXIV: colours, stripes, logo, wordmark, names and numbers on every piece, in 3D, then a Penumbra add-on.">
-<meta name="generator" content="Aetherial Gridiron 0.3.2 team builder">
+<meta name="generator" content="Aetherial Gridiron 0.5.0 team builder">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>body{margin:0}[hidden]{display:none!important}</style>
 <title>Aetherial Gridiron Team Builder</title>
@@ -238,6 +238,7 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; color: var(--
         <div class="sub"><span>Roster</span><button type="button" class="opt" id="addPlayer">Add a player</button></div>
         <p class="hint" id="rosterHint">One jersey per player in the same add-on, each its own option. The preview shows the first.</p>
         <div class="rows" id="roster"></div>
+        <div class="rows" id="sleeveRow" hidden><span class="eyebrow">Sleeve stripes</span><div class="opts" id="sleeveOpts"></div></div>
         <div class="sub">Home</div>
         <div class="rows" id="jerseyHome"></div>
         <div class="sub"><span>Away</span><label class="toggle"><input type="checkbox" id="jerseyAwayOn" checked> Include</label></div>
@@ -253,6 +254,7 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; color: var(--
 
       <section class="card" aria-labelledby="h-pants">
         <h2 id="h-pants">Pants <small>and leggings</small></h2>
+        <div class="rows" id="pantsStripeRow" hidden><span class="eyebrow">Side stripe</span><div class="opts" id="pantsStripeOpts"></div></div>
         <div class="sub">Home</div>
         <div class="rows" id="pantsHome"></div>
         <div class="sub"><span>Away</span><label class="toggle"><input type="checkbox" id="pantsAwayOn" checked> Include</label></div>
@@ -263,6 +265,7 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; color: var(--
 
       <section class="card" aria-labelledby="h-feet">
         <h2 id="h-feet">Socks and cleats</h2>
+        <div class="rows" id="sockStripeRow" hidden><span class="eyebrow">Sock stripes</span><div class="opts" id="sockStripeOpts"></div></div>
         <div class="rows" id="feetRows"></div>
       </section>
 
@@ -320,9 +323,9 @@ const MOOGLES = {
   helmet: { shell: "primary", style: "classic", stripe: "secondary", pinstripe: "white", facemask: "secondary", chinstrap: "#272729", mouthguard: "primary" },
   jersey: { wordmark: "MOOGLES", name: "KUPO", number: "13", crest: true,
     home: { body: "primary", trim: "secondary", numbers: "white", panels: "" },
-    away: { body: "#EDEDEB", trim: "secondary", numbers: "primary", panels: "" }, awayOn: true, baseLayer: "#F3F3F5" },
+    away: { body: "#EDEDEB", trim: "secondary", numbers: "primary", panels: "" }, awayOn: true, baseLayer: "#F3F3F5", sleeves: "classic" },
   gloves: { main: "primary", palm: "secondary", trim: "white" },
-  pants: { home: { main: "secondary", stripe: "primary", piping: "white" }, away: { main: "white", stripe: "primary", piping: "white" }, awayOn: true, leggings: "#F6F6F6" },
+  pants: { home: { main: "secondary", stripe: "primary", piping: "white" }, away: { main: "white", stripe: "primary", piping: "white" }, awayOn: true, leggings: "#F6F6F6", style: "classic" },
   feet: { socks: "white", band: "secondary", cleats: "primary", accent: "secondary", detail: "white", studs: "#303035" },
   dirt: ["clean", "worn", "grass", "muddy"], dyes: true, pieces: ["head", "body", "hands", "legs", "feet"],
 };
@@ -507,6 +510,28 @@ function buildForm() {
     b.addEventListener("click", () => { team.helmet.style = k; changed(); });
     $("stripeOpts").appendChild(b);
   }
+  // pants side stripe and sleeve stripe styles
+  for (const [k, st] of Object.entries(TE.PANTS_STRIPES)) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "opt"; b.dataset.pstripe = k;
+    b.innerHTML = `<svg width="26" height="32" viewBox="0 0 26 32" aria-hidden="true"></svg>${st.label}`;
+    b.addEventListener("click", () => { team.pants.style = k; changed(); });
+    $("pantsStripeOpts").appendChild(b);
+  }
+  for (const [k, st] of Object.entries(TE.SOCK_STRIPES || {})) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "opt"; b.dataset.sockstripe = k;
+    b.innerHTML = `<svg width="26" height="32" viewBox="0 0 26 32" aria-hidden="true"></svg>${st.label}`;
+    b.addEventListener("click", () => { team.feet.stripes = k; changed(); });
+    $("sockStripeOpts").appendChild(b);
+  }
+  for (const [k, st] of Object.entries(TE.SLEEVE_STRIPES)) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "opt"; b.dataset.sleeve = k;
+    b.innerHTML = `<svg width="26" height="32" viewBox="0 0 26 32" aria-hidden="true"></svg>${st.label}`;
+    b.addEventListener("click", () => { team.jersey.sleeves = k; changed(); });
+    $("sleeveOpts").appendChild(b);
+  }
   const H = $("helmetRows");
   colourField(H, "helmet.shell", "Shell"); colourField(H, "helmet.stripe", "Stripe"); colourField(H, "helmet.pinstripe", "Pinstripe");
   colourField(H, "helmet.facemask", "Facemask"); colourField(H, "helmet.chinstrap", "Chin strap"); colourField(H, "helmet.mouthguard", "Mouthguard");
@@ -674,6 +699,39 @@ function stripeIcon(svg, style) {
   svg.innerHTML = `<defs><clipPath id="cl-${style}"><ellipse cx="13" cy="16" rx="10.5" ry="14"/></clipPath></defs><g clip-path="url(#cl-${style})">${s}</g>`;
 }
 
+/** A pants stripe style: a strip of the pants with its bands either side of the side line. */
+function pantsStripeIcon(svg, style) {
+  const p = team.pants.home, k = 11 / 0.021, X = 13;
+  let s = `<rect x="1" y="1" width="24" height="30" rx="3" fill="${hexOf(p.main)}" stroke="rgba(0,0,0,.35)"/>`;
+  for (const [lo, hi, role] of TE.PANTS_STRIPES[style].bands) {
+    const c = hexOf(role === "a" ? p.stripe : p.piping);
+    for (const [x0, x1] of lo === 0 ? [[X - hi * k, X + hi * k]] : [[X - hi * k, X - lo * k], [X + lo * k, X + hi * k]])
+      s += `<rect x="${x0.toFixed(2)}" y="1.5" width="${Math.max(x1 - x0, 0.8).toFixed(2)}" height="29" fill="${c}"/>`;
+  }
+  svg.innerHTML = s;
+}
+/** A sleeve stripe style: the end of a sleeve, hem at the bottom, with its bands above it. */
+function sleeveIcon(svg, style) {
+  const j = team.jersey.home, k = 24 / 0.04, Y = 30;
+  let s = `<rect x="1" y="1" width="24" height="30" rx="3" fill="${hexOf(j.body)}" stroke="rgba(0,0,0,.35)"/>`;
+  for (const [lo, hi, role] of TE.SLEEVE_STRIPES[style].bands) {
+    const c = hexOf(role === "trim" ? j.trim : j.numbers);
+    s += `<rect x="1.5" y="${(Y - hi * k).toFixed(2)}" width="23" height="${Math.max((hi - lo) * k, 0.8).toFixed(2)}" fill="${c}"/>`;
+  }
+  svg.innerHTML = s;
+}
+
+/** A sock stripe style: the top of a sock, the pants hem at the top, with its bands below it. */
+function sockIcon(svg, style) {
+  const f = team.feet, k = 30 / 0.13;
+  let s = `<rect x="4" y="1" width="18" height="30" rx="3" fill="${hexOf(f.socks)}" stroke="rgba(0,0,0,.35)"/>`;
+  s += `<rect x="2" y="1" width="22" height="${(0.05 * k).toFixed(2)}" fill="${hexOf(team.pants.home.main)}"/>`;
+  for (const [lo, hi] of TE.SOCK_STRIPES[style].bands) {
+    s += `<rect x="4.5" y="${(1 + lo * k).toFixed(2)}" width="17" height="${Math.max((hi - lo) * k, 0.8).toFixed(2)}" fill="${hexOf(f.band)}"/>`;
+  }
+  svg.innerHTML = s;
+}
+
 function render() {
   for (const k of ["primary", "secondary", "accent"]) {
     $("pal-" + k).value = team.colors[k].toLowerCase();
@@ -688,6 +746,9 @@ function render() {
   if (meshes.head) { meshes.head.material.roughness = { gloss: 0.32, satin: 0.5, matte: 0.78, high: 0.18 }[team.helmet.finish || "gloss"]; needsDraw = true; }
   $("logoReplace").hidden = !team.customLogo;
   document.querySelectorAll("[data-style]").forEach((b) => { b.setAttribute("aria-pressed", b.dataset.style === team.helmet.style); stripeIcon(b.querySelector("svg"), b.dataset.style); });
+  document.querySelectorAll("[data-pstripe]").forEach((b) => { b.setAttribute("aria-pressed", b.dataset.pstripe === (team.pants.style || "classic")); pantsStripeIcon(b.querySelector("svg"), b.dataset.pstripe); });
+  document.querySelectorAll("[data-sockstripe]").forEach((b) => { b.setAttribute("aria-pressed", b.dataset.sockstripe === (team.feet.stripes || "none")); sockIcon(b.querySelector("svg"), b.dataset.sockstripe); });
+  document.querySelectorAll("[data-sleeve]").forEach((b) => { b.setAttribute("aria-pressed", b.dataset.sleeve === (team.jersey.sleeves || "classic")); sleeveIcon(b.querySelector("svg"), b.dataset.sleeve); });
   if (document.activeElement !== $("teamName")) $("teamName").value = team.name;
   for (const [id, v] of [["wordmark", team.jersey.wordmark], ["pname", team.jersey.name], ["pnum", team.jersey.number]])
     if (document.activeElement !== $(id)) $(id).value = v || "";
@@ -834,6 +895,8 @@ pw.onmessage = (e) => {
     if (renderer) addGeometry(m.geometry);
     $("needs").textContent = `Needs Aetherial Gridiron ${m.version || ""} enabled, with its pieces on.`;
     $("makeBtn").disabled = false;
+    $("sleeveRow").hidden = $("pantsStripeRow").hidden = !m.stripes;
+    $("sockStripeRow").hidden = !(m.stripes && m.stripes.sock_range);
     requestPreview(true);
   } else if (m.type === "textures" || m.type === "error") {
     pending = Math.max(0, pending - 1);

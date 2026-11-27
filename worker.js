@@ -55,6 +55,12 @@ function nearest2(src, size) {
   for (let y = 0; y < h; y++) for (let x = 0; x < h; x++) out[y * h + x] = src[(2 * y + 1) * size + 2 * x + 1];
   return out;
 }
+function nearest2n(src, size, nch) {         // nearest 2x2 pick of a size x size image with nch channels
+  const h = size >> 1, out = new Uint8Array(nch * h * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < h; x++)
+    for (let k = 0; k < nch; k++) out[(y * h + x) * nch + k] = src[((2 * y + 1) * size + 2 * x + 1) * nch + k];
+  return out;
+}
 function bytesOf(f) { const o = new Uint8Array(f.length); for (let i = 0; i < f.length; i++) o[i] = Math.round(Math.min(Math.max(f[i], 0), 1) * 255); return o; }
 
 /** The Moogles-coloured canvas of a piece at 1K, with the team's logos (and the jersey's lettering). */
@@ -82,7 +88,11 @@ async function init() {
   for (const slot of TE.SLOTS) {
     postMessage({ type: "status", text: `Loading ${T.slots[slot].label.split(",")[0].toLowerCase()}` });
     const full = TE.slotData(await get(`${slot}.bin`));
-    const D = { meta: { overlays: {}, spots: full.meta.spots || [] } };
+    const D = { meta: { overlays: {}, spots: full.meta.spots || [], locks: full.meta.locks || [] } };
+    if (full.stripe) {                        // the stripe map at 1K, for the stripe styles
+      const nch = full.stripe_shape[2];
+      D.stripe = nearest2n(full.stripe, C.id_size, nch); D.stripe_shape = [PREVIEW, PREVIEW, nch];
+    }
     (full.meta.spots || []).forEach((_, i) => { D[`spot_${i}_cov`] = full[`spot_${i}_cov`]; });
     if (slot === "head") {
       D.wear = new Uint16Array(PREVIEW * PREVIEW);
@@ -93,7 +103,7 @@ async function init() {
     geometry[slot] = g;
     transfer.push(g.pos.buffer, g.nrm.buffer, g.uv.buffer, g.idx.buffer);
   }
-  postMessage({ type: "ready", geometry, version: T.mod_version, slots: Object.fromEntries(TE.SLOTS.map((s) => [s, T.slots[s].label])) }, transfer);
+  postMessage({ type: "ready", geometry, version: T.mod_version, stripes: C.stripes || null, slots: Object.fromEntries(TE.SLOTS.map((s) => [s, T.slots[s].label])) }, transfer);
 }
 
 function preview(team, seq) {
